@@ -3,7 +3,6 @@ from pydantic.networks import EmailStr
 from sqlalchemy.sql.expression import null
 from .sec.sec_hashing import Hash
 from modulos.seguridad.models import *
-from modulos.seguridad.schemas import Login, UpdatePassword, ForgotPassword
 from typing import Type, Optional, Dict, Any, Tuple
 from uuid import uuid4
 from fastapi.security.api_key import APIKeyBase, APIKey, APIKeyIn
@@ -15,9 +14,9 @@ from base64 import b64encode, b64decode
 from db import database
 from fastapi import APIRouter, Depends, HTTPException, FastAPI, Request, Response
 from sqlalchemy.orm import Session
-from modulos.shared_defs import getSettingsName, getSettingsNombreEnvActivo, is_SuperUser, raiseExceptionDataErr, raiseExceptionExpired
 from starlette.types import Message
 import datetime 
+from fastapi.encoders import jsonable_encoder
 
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -212,33 +211,28 @@ async def validarSessionforApis(session: Tuple[SessionData, str], db:Session):
         return RedirectResponse("/")
 """
 
-@router.post("/api/login")
-async def authenticate_User(userDado : Login, response: Response, ret: str = "/", db: Session = Depends(database.get_db)):
+@router.get("/api/login")
+async def authenticate_User(username:str,password:str, response: Response, db: Session = Depends(database.get_db)):
     #    formDado = await request.form()
     #    userDado = Login(**formDado)
-    #    #print(userDado)
-    userinDB = db.query(User).filter( User.email == userDado.username ).first()
-    if (userinDB != None and userDado.username == userinDB.email and userinDB.is_active == True and Hash.verify(userinDB.password, userDado.password) ):
-        test_user = SessionData(username=userDado.username, id=userinDB.id)
+    print()
+    print(username)
+    userinDB = db.query(User).filter( User.email == username ).first()
+    if (userinDB != None and username == userinDB.email and Hash.verify(userinDB.password, password) ):
+        test_user = SessionData(username=username, id=userinDB.id)
         
         await test_session.start_and_set_session(test_user, response)
-        return {"message": "Welcome!!!", "user": test_user}
+        resp={'respuesta': 'Bienvenido','token':username}
+        return jsonable_encoder(resp)
+        # return {'respuesta': 'Bienvenido','token':username}
     else:
         # TODO: borrar cualquier cookie de sesión existente, si se desea emplear el api/login
         #await test_session.end_and_delete_session(session, response)
         response.delete_cookie( "session" )
         raiseExceptionDataErr(f"Credenciales inválidas")
+        return jsonable_encoder({'respuesta': 'Usuario y/o contraseña incorrectos'}, sort_keys=True, indent=4)
+        # return {'respuesta': 'Usuario y/o contraseña incorrectos'}
         
-
-@router.get("/login")
-def show_Login_View(request: Request, ret: str = "/main", db: Session = Depends(database.get_db)):
-    return templates.TemplateResponse( name="login.html", context={ "request": request, "ret": ret, "envname": getSettingsNombreEnvActivo(db) } )
-
-@router.get("/logout")
-async def send_logout(response: Response,session: Optional[Tuple[SessionData, str]] = Depends(test_session)):
-    await test_session.end_and_delete_session(session, response)
-    return RedirectResponse('/login')
-
 @router.get("/api/resetPassword/confirm-pwd/{email}")
 async def reset_password( request: Request, email: EmailStr, referencia: str, response: Response, ret: str ="/api/resetPassword/confirm-pwd" , db: Session = Depends(database.get_db)):
     # datosVerificacion = UserResetPwdVerify(email=email, referencia=referencia)
@@ -252,158 +246,135 @@ async def reset_password( request: Request, email: EmailStr, referencia: str, re
         return templates.TemplateResponse(name="invalid-token.html", context={"request": request, "message": "SU TOKEN SE HA CADUCADO, SOLICITE OTRO!!"})
 
 
-@router.post("/api/resetPassword/update")
-#async def update_password( request: Request, datosUpdate: UpdatePassword, referencia: str, email: EmailStr, pwdNuevo:str, pwdNuevoRepetir:str, ret: str = "/", db: Session = Depends(database.get_db) ):
-async def update_password( request: Request, datosUpdate: UpdatePassword, response: Response, ret: str = "/", db: Session = Depends(database.get_db) ):
-    #return({"message": "dentro de la api"})
-    #if(email != null and referencia != null and pwdNuevo != null and pwdNuevoRepetir != null):
-    print(datosUpdate)
-    if(datosUpdate.email != null and datosUpdate.referencia != null and datosUpdate.pwdNuevo != null and datosUpdate.pwdNuevoRepetir != null):
-        newUpdatePWd = Hash.bcrypt(datosUpdate.pwdNuevo)
-        print(newUpdatePWd)
-        user = db.query(User).filter(User.email == datosUpdate.email).first()
-        activadoReset = db.query(UserResetPwd).filter(UserResetPwd.referencia == datosUpdate.referencia).first()
-
-        if (user != None and activadoReset != None):
-            user.password = newUpdatePWd
-            user.update(db)
-
-            activadoReset.activado = True
-            activadoReset.update(db)
-            print("password actualizado en la BD")
-        return({"sms": "SU CONTRASEÑA HA SIDO ACTUALIZADA CORRECTAMENTE!!"})
-    else:
-        print("token no valido...")
-        raiseExceptionDataErr(f"NO LLEGARON DATOS!!")
 
 
-@router.post("/api/forgotPassword")
-async def reset_password(request: Request, emailDado: ForgotPassword, responde: Response,  ret: str = "/ForgotPassword", db: Session = Depends(database.get_db)):
-    #return templates.TemplateResponse( name="forgot-password.html", context={ "request": "correo", "ret": ret } )
-    siExiste = ''
-    mensajeRetorno = ''
+# @router.post("/api/forgotPassword")
+# async def reset_password(request: Request, emailDado: ForgotPassword, responde: Response,  ret: str = "/ForgotPassword", db: Session = Depends(database.get_db)):
+#     #return templates.TemplateResponse( name="forgot-password.html", context={ "request": "correo", "ret": ret } )
+#     siExiste = ''
+#     mensajeRetorno = ''
 
-    userinDB = db.query(User).filter( User.email == emailDado.email ).first()
-    setting_email = db.query(Settings).filter( Settings.campo == "$EMAIL_CUENTA" ).first()
-    setting_password = db.query(Settings).filter( Settings.campo == "$EMAIL_PASSWORD").first()
+#     userinDB = db.query(User).filter( User.email == emailDado.email ).first()
+#     setting_email = db.query(Settings).filter( Settings.campo == "$EMAIL_CUENTA" ).first()
+#     setting_password = db.query(Settings).filter( Settings.campo == "$EMAIL_PASSWORD").first()
     
-    # TODO: Obtener de la tabla de settings, la variable environment para obtener cual es el entorno actualmente activo
-    # y con ello, su respectiva url
-    setting_baseUrl = db.query(Settings).filter(Settings.campo == "$BASE_URL").first()
+#     # TODO: Obtener de la tabla de settings, la variable environment para obtener cual es el entorno actualmente activo
+#     # y con ello, su respectiva url
+#     setting_baseUrl = db.query(Settings).filter(Settings.campo == "$BASE_URL").first()
 
-    setting_emailResetTimeToken = db.query(Settings).filter(Settings.campo == "$EMAIL_RESET_TIME_TOKEN").first()
-    if(setting_email == None or setting_password == None or setting_baseUrl == None):
-        #TODO: Enviar un aviso a la cuanta del administrador para que configure la tabla
-        return({"message": "Se necesita configurar una cuenta de correo institucional para usar esta funcionalidad"})
-    sys_name = "$SYS_NAME"
-    SYS_NAME        = getSettingsName(sys_name)
-    EMAIL_CUENTA    = setting_email.valor
-    EMAIL_PASSWORD  = setting_password.valor
-    BASE_URL        = setting_baseUrl.valor
-    TIME_TOKEN_RP   = setting_emailResetTimeToken.valor
+#     setting_emailResetTimeToken = db.query(Settings).filter(Settings.campo == "$EMAIL_RESET_TIME_TOKEN").first()
+#     if(setting_email == None or setting_password == None or setting_baseUrl == None):
+#         #TODO: Enviar un aviso a la cuanta del administrador para que configure la tabla
+#         return({"message": "Se necesita configurar una cuenta de correo institucional para usar esta funcionalidad"})
+#     sys_name = "$SYS_NAME"
+#     SYS_NAME        = getSettingsName(sys_name)
+#     EMAIL_CUENTA    = setting_email.valor
+#     EMAIL_PASSWORD  = setting_password.valor
+#     BASE_URL        = setting_baseUrl.valor
+#     TIME_TOKEN_RP   = setting_emailResetTimeToken.valor
 
     
-    if(userinDB):
-        siExiste = 'si'
-        # remitente = 'sisutscorporation21@gmail.com'
-        newPassword = ''
-        newPBcrypt = ''
-        iterador = 0
+#     if(userinDB):
+#         siExiste = 'si'
+#         # remitente = 'sisutscorporation21@gmail.com'
+#         newPassword = ''
+#         newPBcrypt = ''
+#         iterador = 0
 
-        while iterador <= 6:
-            newPassword += str(randrange(10))
-            iterador+=1
+#         while iterador <= 6:
+#             newPassword += str(randrange(10))
+#             iterador+=1
 
-        newPBcrypt = Hash.bcrypt(newPassword)
+#         newPBcrypt = Hash.bcrypt(newPassword)
 
-        horaActual = datetime.datetime.now()
-        horaEspera = horaActual + datetime.timedelta(minutes=int(TIME_TOKEN_RP))
-        #horaEspera = horaActual + datetime.timedelta(minutes=5)
+#         horaActual = datetime.datetime.now()
+#         horaEspera = horaActual + datetime.timedelta(minutes=int(TIME_TOKEN_RP))
+#         #horaEspera = horaActual + datetime.timedelta(minutes=5)
 
-        UserReset = UserResetPwd(
-            email = emailDado.email,
-            referencia = newPBcrypt,
-            fechaini = horaActual,
-            fechafin = horaEspera,
-            confirmacion = True,
-            activado = False
-        )
-
-
-        UserReset.create(db)
-        db.commit()
-
-        msg = MIMEMultipart()
-        msg['Subject'] = "SERVICIO " + SYS_NAME
-        msg['From'] = EMAIL_CUENTA
-        msg['To'] = emailDado.email
-
-        #text = "Por algún prublema reportese con el administrador del sistema"
-        html = f"""\
-        <!DOCTYPE html>
-        <html lang="es">
-            <head>
-                <meta charset="utf-8">
-                <title>{SYS_NAME}</title>
-            </head>
-            <body style="background-color: #fff ">
-                <table style="max-width: 600px; padding: 10px; margin:0 auto; border-collapse: collapse;">
-                    <tr>
-                        <td style="background-color: #ecf0f1; text-align: left; padding: 0">
-                            <center>
-                                <img width="40%" style="display:block; margin: 1.5% 3%" src="http://www.utselva.edu.mx/imagenes/logotipo.png">
-                            </center>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="background-color: #ecf0f1">
-                            <div style="color: #34495e; margin: 4% 10% 2%; text-align: justify;font-family: sans-serif">
-                                <center><h2 style="color: #117688; margin: 0 0 7px;">Solicitud para el cambio de contraseña</h2></center>
-                                <p style="margin: 2px; font-size: 15px"> Ha solicitado el cambio de su contraseña para su cuenta de la plataforma {SYS_NAME}, favor de <strong>confirmar</strong> en el siguiente botón y será redireccionado a un formulario.</p>
-                                <ul style="font-size: 15px;  margin: 10px 0; list-style:none; color: #34495e">
-                                    <li>1. Cuenta con 10 minutos de valides para su token</li>
-                                    <li>2. Por cualquier problema no resuelto por el sistema, comuníquese con el administrador</li>
-                                </ul>
-                                    <br>
-                                    <div style="width: 100%; text-align: center">
-                                        <a href="{BASE_URL}api/resetPassword/confirm-pwd/{emailDado.email}?referencia={newPBcrypt}" style="text-decoration: none; border-radius: 5px; padding: 11px 23px; color: white; background-color: #3498db">CONFIRMAR</a>	
-                                    </div><br>
-                                <p style="color: #b3b3b3; font-size: 12px; text-align: center; margin: 30px 0 0"> {SYS_NAME}</p>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-
-            </body>
-        </html>
-        """
-
-        #part1 = MIMEText(text, 'plain')
-        part2 = MIMEText(html, 'html')
-
-        #msg.attach(part1)
-        msg.attach(part2)
+#         UserReset = UserResetPwd(
+#             email = emailDado.email,
+#             referencia = newPBcrypt,
+#             fechaini = horaActual,
+#             fechafin = horaEspera,
+#             confirmacion = True,
+#             activado = False
+#         )
 
 
-        #sms = 'HOLA! SU NUEVA CONTRASEÑA ES: '+ newPassword +' FAVOR DE INGRESAR Y CAMBIAR NUEVAMENTE SU CONTRASEÑA'
-        #encabezado = 'Contraseña nueva para SISUTS'
-        #sms = 'Subject: {}\n\n{}'.format(encabezado, sms)
-        s = smtplib.SMTP('smtp.gmail.com', 587)
-        s.starttls()
-        s.ehlo()
-        s.login(EMAIL_CUENTA,EMAIL_PASSWORD)
-        #server.sendmail(remitente, emailDado.email, sms.encode('utf-8'))
-        #server.quit()
-        s.sendmail(EMAIL_CUENTA, emailDado.email, msg.as_string())
-        s.quit()
+#         UserReset.create(db)
+#         db.commit()
 
-        mensajeRetorno = 'CORREO ENVIADO CORRECTAMENTE!!'
+#         msg = MIMEMultipart()
+#         msg['Subject'] = "SERVICIO " + SYS_NAME
+#         msg['From'] = EMAIL_CUENTA
+#         msg['To'] = emailDado.email
+
+#         #text = "Por algún prublema reportese con el administrador del sistema"
+#         html = f"""\
+#         <!DOCTYPE html>
+#         <html lang="es">
+#             <head>
+#                 <meta charset="utf-8">
+#                 <title>{SYS_NAME}</title>
+#             </head>
+#             <body style="background-color: #fff ">
+#                 <table style="max-width: 600px; padding: 10px; margin:0 auto; border-collapse: collapse;">
+#                     <tr>
+#                         <td style="background-color: #ecf0f1; text-align: left; padding: 0">
+#                             <center>
+#                                 <img width="40%" style="display:block; margin: 1.5% 3%" src="http://www.utselva.edu.mx/imagenes/logotipo.png">
+#                             </center>
+#                         </td>
+#                     </tr>
+#                     <tr>
+#                         <td style="background-color: #ecf0f1">
+#                             <div style="color: #34495e; margin: 4% 10% 2%; text-align: justify;font-family: sans-serif">
+#                                 <center><h2 style="color: #117688; margin: 0 0 7px;">Solicitud para el cambio de contraseña</h2></center>
+#                                 <p style="margin: 2px; font-size: 15px"> Ha solicitado el cambio de su contraseña para su cuenta de la plataforma {SYS_NAME}, favor de <strong>confirmar</strong> en el siguiente botón y será redireccionado a un formulario.</p>
+#                                 <ul style="font-size: 15px;  margin: 10px 0; list-style:none; color: #34495e">
+#                                     <li>1. Cuenta con 10 minutos de valides para su token</li>
+#                                     <li>2. Por cualquier problema no resuelto por el sistema, comuníquese con el administrador</li>
+#                                 </ul>
+#                                     <br>
+#                                     <div style="width: 100%; text-align: center">
+#                                         <a href="{BASE_URL}api/resetPassword/confirm-pwd/{emailDado.email}?referencia={newPBcrypt}" style="text-decoration: none; border-radius: 5px; padding: 11px 23px; color: white; background-color: #3498db">CONFIRMAR</a>	
+#                                     </div><br>
+#                                 <p style="color: #b3b3b3; font-size: 12px; text-align: center; margin: 30px 0 0"> {SYS_NAME}</p>
+#                             </div>
+#                         </td>
+#                     </tr>
+#                 </table>
+
+#             </body>
+#         </html>
+#         """
+
+#         #part1 = MIMEText(text, 'plain')
+#         part2 = MIMEText(html, 'html')
+
+#         #msg.attach(part1)
+#         msg.attach(part2)
+
+
+#         #sms = 'HOLA! SU NUEVA CONTRASEÑA ES: '+ newPassword +' FAVOR DE INGRESAR Y CAMBIAR NUEVAMENTE SU CONTRASEÑA'
+#         #encabezado = 'Contraseña nueva para SISUTS'
+#         #sms = 'Subject: {}\n\n{}'.format(encabezado, sms)
+#         s = smtplib.SMTP('smtp.gmail.com', 587)
+#         s.starttls()
+#         s.ehlo()
+#         s.login(EMAIL_CUENTA,EMAIL_PASSWORD)
+#         #server.sendmail(remitente, emailDado.email, sms.encode('utf-8'))
+#         #server.quit()
+#         s.sendmail(EMAIL_CUENTA, emailDado.email, msg.as_string())
+#         s.quit()
+
+#         mensajeRetorno = 'CORREO ENVIADO CORRECTAMENTE!!'
 
         
-        db.query(User).filter_by(email=emailDado.email).update(dict(password=newPBcrypt))
-        db.commit()
-        #db.session.commit()
-    else:
-        siExiste= 'no'
-        mensajeRetorno = 'No existen una cuenta de usuario con los datos proporcionados'
-    return({"message": mensajeRetorno, "email": emailDado.email, "Existe": siExiste})
+#         db.query(User).filter_by(email=emailDado.email).update(dict(password=newPBcrypt))
+#         db.commit()
+#         #db.session.commit()
+#     else:
+#         siExiste= 'no'
+#         mensajeRetorno = 'No existen una cuenta de usuario con los datos proporcionados'
+#     return({"message": mensajeRetorno, "email": emailDado.email, "Existe": siExiste})

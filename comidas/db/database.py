@@ -16,10 +16,14 @@ from db.base_class import Base
 # imported by Alembic
 #from modulos.seguridad.models import User, Rol, RolUser  # noqa
 
-SQLALCHEMY_DATABASE_URL = 'postgresql://sisuts:sisuts@localhost:5432/sisuts'
+# SQLALCHEMY_DATABASE_URL = 'postgresql://sisuts:sisuts@localhost:5432/sisuts'
+SQLALCHEMY_DATABASE_URL = 'mysql+mysqlconnector://comidas:1234@localhost:3306/comidas'
 Base = declarative_base()
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True, echo = False)
 SessionLocal = sessionmaker( bind=engine, autocommit=False, autoflush=False)
+
+
+# engine = create_engine('mysql://'+user+':'+password+'@+str(host)+'/'++dbname+'?charset=utf8&use_unicode=0', pool_recycle=port)
 
 Base = declarative_base()
                 
@@ -40,7 +44,7 @@ def createLastChangesInDB():
     wd = f"{wd}{os.sep}db"
     with os.scandir(wd) as ficheros:
         archsConCambiosALaBD = [fichero.name for fichero in ficheros if fichero.is_file() and \
-            fichero.name.startswith('sisuts_db_') and fichero.name.endswith('.sql')  ]
+            fichero.name.startswith('comidasdb_') and fichero.name.endswith('.sql')  ]
     #print (archsConCambiosALaBD)
     if len(archsConCambiosALaBD) == 0:
         print ( __name__ + 'Error no se encontró ningun archivo de creación de la BD')
@@ -79,14 +83,14 @@ def createLastChangesInDB():
                         trans.commit()
                         totFilesExecOK += 1
                     except  (BaseException) as err :
-                        print("Err BD: ")
+                        print("Err version BD: ")
                         print(err)
                         trans.rollback()
                         break
 
                 except  (BaseException) as err :
                     numErrs += 1
-                    print("Err BD: ")
+                    print("Err script BD: ")
                     print(err)
             else:
                 totFilesExecOK += 1
