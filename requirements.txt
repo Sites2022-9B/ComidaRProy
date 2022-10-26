@@ -13,10 +13,5 @@ requests
 pytest
 psycopg2
 pandas
-openpyxl
-xlrd
-xlwt
-fpdf2==2.5.1
-qrcode[pil]
 python-dotenv
 mysql-connector-python

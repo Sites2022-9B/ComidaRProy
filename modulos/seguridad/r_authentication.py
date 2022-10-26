@@ -228,9 +228,9 @@ async def authenticate_User(username:str,password:str, response: Response, db: S
     else:
         # TODO: borrar cualquier cookie de sesión existente, si se desea emplear el api/login
         #await test_session.end_and_delete_session(session, response)
-        response.delete_cookie( "session" )
-        raiseExceptionDataErr(f"Credenciales inválidas")
-        return jsonable_encoder({'respuesta': 'Usuario y/o contraseña incorrectos'}, sort_keys=True, indent=4)
+        # response.delete_cookie( "session" )
+        # raiseExceptionDataErr(f"Credenciales inválidas")
+        return jsonable_encoder({'respuesta': 'Usuario y/o contraseña incorrectos'})
         # return {'respuesta': 'Usuario y/o contraseña incorrectos'}
         
 @router.get("/api/resetPassword/confirm-pwd/{email}")

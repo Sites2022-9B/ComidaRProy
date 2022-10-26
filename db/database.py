@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 import os
 from db.base_class import Base
+from fastapi.encoders import jsonable_encoder
 
 # Import all the models, so that Base has them before being
 # imported by Alembic
@@ -140,6 +141,51 @@ def execSql(sqlText: str, sqlParams={}, getCamposYValores: Boolean = False, getM
                         resp = metadatos, acum, totalregs
                     return resp
             except (BaseException) as err :
+                print("falla en bd")
+                print(err)
+    except (BaseException) as err2:
+        print("Error de conexión con el servidor de BD:")
+        print(err2)
+
+
+def execSqlprueba(sqlText: str, sqlParams={}, getCamposYValores: Boolean = False, getMeta:Boolean = False, getTotal:Boolean = False, offset:str = None, limit:str = None):
+    metadatos = ""
+    sqlText = sqlText.strip().replace("\n", " ")
+    try:
+        with engine.connect() as con:
+            try:
+                statement = text (sqlText)
+                # print("parametros ",len(sqlParams))
+                if (len(sqlParams) > 0 ):
+                    rs = con.execute(statement, (sqlParams) )
+                    # print("r if ",rs)
+                else:
+                    rs = con.execute(statement)
+                    # print("r else ",rs)
+                if rs.returns_rows == True:
+                    acum = []
+                    metadatos = rs._metadata.keys._keys
+                    if getCamposYValores == True:
+                        acum = [row._mapping for row in rs]
+                    else:
+                        acum = [row._data for row in rs]
+                    totalregs = len(acum)
+                    #totalregs = rs.cursor.arraysize # solo es útil para operaciones de Ins, Upd, Del
+                    if totalregs > 0 :
+                        if limit != None and limit != "0":
+                            intOffset = int(offset)
+                            intLimit = int(limit)
+                            # retornar solamente la lista paginada
+                            acum = acum[intOffset: (intOffset + intLimit)] 
+
+                    resp = acum
+                    if getMeta == True:
+                        resp = metadatos, acum
+                    if getTotal == True:
+                        resp = metadatos, acum, totalregs
+                    return resp
+            except (BaseException) as err :
+                print("falla en bd")
                 print(err)
     except (BaseException) as err2:
         print("Error de conexión con el servidor de BD:")

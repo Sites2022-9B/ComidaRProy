@@ -49,33 +49,112 @@ CREATE TABLE IF NOT EXISTS `restaurant` (
   CONSTRAINT `restaurant_ibfk_1` FOREIGN KEY (`email`) REFERENCES `users` (`email`) 
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS `platillo` (
+CREATE TABLE IF NOT EXISTS `platillos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `id_restaurant` int(11) NOT NULL,
   `nombre` varchar(255) NOT NULL,
   `descripcion` varchar(255) NOT NULL,
   `precio` decimal(10,2) NOT NULL,
-  `imagen` varchar(255) NOT NULL,
+  `imagen` varchar(255) NULL,
   `categoria` varchar(255) NOT NULL,
   `status` enum('DISPONIBLE','NO DISPONIBLE') NOT NULL DEFAULT 'DISPONIBLE',
   PRIMARY KEY (`id`),
   KEY `id_restaurant` (`id_restaurant`),
-  CONSTRAINT `platillo_ibfk_1` FOREIGN KEY (`id_restaurant`) REFERENCES `restaurant` (`id`)
+  CONSTRAINT `platillos_ibfk_1` FOREIGN KEY (`id_restaurant`) REFERENCES `restaurant` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
-INSERT INTO `users` (`id`, `email`, `password`, `remember_token`, `created_at`, `updated_at`, `isEncrypted`) VALUES
-	(1, 'ramon.bonachea@email.com', '123456', NULL, '2022-09-12 04:16:06', '2022-09-12 04:16:06','false'),
-	(2, 'r.bonachea@email.com', '123454', NULL, '2022-09-12 04:16:11', '2022-09-12 04:16:12','false'),
-	(3, 'r.bonachea21@email.com', '1234542', NULL, '2022-09-12 04:16:17', '2022-09-12 04:16:17','false'),
-	(4, 'r.fonda444421@email.com', '123451', NULL, '2022-09-12 04:16:20', '2022-09-12 04:16:20','false'),
-	(5, 'r.restauran321@email.com', '123458', NULL, '2022-09-12 04:16:11', '2022-09-12 04:16:12','false'),
-	(6, 'r.fondaflorinda21@email.com', '145789', NULL, '2022-09-12 04:17:56', '2022-09-12 04:17:56','false');
+CREATE TABLE IF NOT EXISTS `horarios` (
+  id int(11) NOT NULL AUTO_INCREMENT,
+  id_restaurant INT NOT NULL,
+  dia enum('L','M','X','J','V','S','D') NOT NULL DEFAULT 'L',
+  hora_e time not null,
+  hora_s time not null,
+  PRIMARY KEY (`id`),
+  KEY `id_restaurant` (`id_restaurant`),
+  CONSTRAINT `horarios_ibfk_1` FOREIGN KEY (`id_restaurant`) REFERENCES `restaurant` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
-INSERT INTO `restaurant` (`id`, `razon_social`, `nombre_contacto`, `clabe`, `direccion`, `telefono`, `email`, `facebook`, `twitter`, `instagram`, `logotipo`, `status`, `ubicacion_lat`, `ubicacion_long`, `verificado`, `created_at`, `updated_at`, `deleted_at`) VALUES
-	(1, 'Comidas Toñitas', 'Mario', '9876543', 'Sexta Poniente Norte', '9897651432', 'ramon.bonachea@email.com', 'Toñita', 'Ninguno', 'Ninguno', 'no', 'CERRADO', '17.171047038617488', '92.33461453753803', 'APROBADO', '2022-09-11 22:59:02', '2022-09-11 22:59:06', '2022-09-11 22:59:08'),
-	(2, 'Comidas Mack', 'Carlos', '12384759', 'Septima Poniente Norte', '9568474589', 'r.bonachea@email.com', 'Mack', 'Ninguno', 'Ninguno', 'no', 'CERRADO', '17.171047038617489', '92.33461453753804', 'APROBADO', '2022-09-11 23:08:02', '2022-09-11 23:04:26', '2022-09-11 23:04:27'),
-	(3, 'Fonda Marinos', 'Henry ', '1487524', 'Cuarta Poniente Sur', '5847589412', 'r.bonachea21@email.com', 'Marinos', 'Ninguno', 'Ninguno', 'no', 'CERRADO', '17.171047038617488', '92.33461453753803', 'APROBADO', '2022-09-11 23:12:02', '2022-09-11 23:10:43', '2022-09-11 23:10:44'),
-	(4, 'Fonda Florinda', 'Florinda', '1457256', 'Sexta Oriente Sur', '5784674516', 'r.fondaflorinda21@email.com', 'Flori', 'Ninguno', 'Ninguno', 'No', 'CERRADO', '17.171047038617488', '92.33461453753801', 'RECHAZADO', '2022-09-11 23:26:00', '2022-09-11 23:25:17', '2022-09-11 23:25:19'),
-	(5, 'El Buen Gusto', 'Cornelio', '1452687', 'Sexta Oriente Norte', '4757157594', 'r.fonda444421@email.com', 'Buen Gusto', 'Ninguno', 'Ninguno', 'no', 'CERRADO', '17.171047038617488', '92.33461453753801', 'SOLICITUD', '2022-09-11 23:29:14', '2022-09-11 23:29:15', '2022-09-11 23:29:16'),
-	(6, 'Palapa del Gato ', 'Pablo ', '7547854', 'Quinta Oriente Sur', '4813297548', 'r.restauran321@email.com', 'Palapa', 'Ninguno', 'Ninguno', 'no', 'CERRADO', '17.171047038617488', '92.33461453753801', 'RECHAZADO', '2022-09-11 23:30:56', '2022-09-11 23:30:57', '2022-09-11 23:30:57');
+CREATE TABLE IF NOT EXISTS `clientes`(
+  id INT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255) NOT NULL,
+  apellidos VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  telefono CHAR(10) NOT NULL,
+  telefono2 CHAR(10) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `email` (`email`),
+  CONSTRAINT `clientes_ibfk_1` FOREIGN KEY (`email`) REFERENCES `users` (`email`) 
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `pedidos`(
+  id INT NOT NULL AUTO_INCREMENT,
+  id_cliente INT NOT NULL,
+  fecha DATETIME NOT NULL,
+  ubicacion_lat VARCHAR(255) NOT NULL,
+  ubicacion_long VARCHAR(255) NOT NULL,
+  status ENUM('PEDIDO','ENTREGA PARCIAL','ENTREGADO','CANCELADO') NOT NULL DEFAULT 'PEDIDO',
+  iva DECIMAL(10,2) NOT NULL,
+  forma_pago ENUM('EFECTIVO','ELECTRONICO') NOT NULL DEFAULT 'EFECTIVO',
+  total DECIMAL(10,2) NOT NULL,
+  envios DECIMAL(10,2) NOT NULL,
+  KEY `id_cliente` (`id_cliente`),
+  CONSTRAINT `pedidos_ibfk_1` FOREIGN KEY (`id_cliente`) REFERENCES `clientes` (`id`) 
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `repartidores`(
+  id INT NOT NULL AUTO_INCREMENT,
+  id_restaurant INT NULL,
+  razon_social VARCHAR(255) NOT NULL,
+  nombre VARCHAR(255) NOT NULL,
+  clabe VARCHAR(255) NOT NULL,
+  telefono CHAR(10) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  horario text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id_restaurant` (`id_restaurant`),
+  CONSTRAINT `repartidores_ibfk_1` FOREIGN KEY (`id_restaurant`) REFERENCES `restaurant` (`id`)
+
+)ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `envios`(
+  id INT NOT NULL AUTO_INCREMENT,
+  id_pedido INT NOT NULL,
+  id_repartidor INT NULL,
+  id_restaurant INT NOT NULL,
+  `status` ENUM('PENDIENTE','PREPARACION','TRANSITO','ENTREGADO','PROBLEMA') NOT NULL DEFAULT 'PREPARACIÓN',
+  observaciones TEXT NOT NULL,
+  total DECIMAL(10,2) NOT NULL,
+  envio DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id_pedido` (`id_pedido`),
+  CONSTRAINT `envios_id_pedido_fk` FOREIGN KEY (`id_pedido`) REFERENCES `pedidos` (`id`),
+  KEY `id_repartidor` (`id_repartidor`),
+  CONSTRAINT `envios_id_repartidor_fk` FOREIGN KEY (`id_repartidor`) REFERENCES `repartidores` (`id`),
+  KEY `id_restaurant` (`id_restaurant`),
+  CONSTRAINT `envios_id_restaurant_fk` FOREIGN KEY (`id_restaurant`) REFERENCES `restaurant` (`id`)
+)ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `pedido_platillos`(
+  id_pedido INT NOT NULL,
+  id_platillo INT NOT NULL,
+  id_envio INT NULL,
+  cantidad INT NOT NULL,
+  precio DECIMAL(10,2) NOT NULL,
+  KEY `id_pedido` (`id_pedido`),
+  CONSTRAINT `pedido_platillos_id_pedido_fk` FOREIGN KEY (`id_pedido`) REFERENCES `pedidos` (`id`),
+  KEY `id_platillo` (`id_platillo`),
+  CONSTRAINT `pedido_platillos_id_platillo_fk` FOREIGN KEY (`id_platillo`) REFERENCES `platillos` (`id`),
+  KEY `id_envio` (`id_envio`),
+  CONSTRAINT `pedido_platillos_id_envio_fk` FOREIGN KEY (`id_envio`) REFERENCES `envios` (`id`)
+)ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;
+
+
+
+
+
+
+
+
+
+
 

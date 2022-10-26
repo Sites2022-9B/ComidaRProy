@@ -9,10 +9,10 @@ from .sec.sec_hashing import Hash
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 
-#Inicializar la cuenta de usuario inicial
-# FIRST_SUPERUSER : str = "r.bonachea@email.com"
-# FIRST_SUPERUSER_PASSWORD : str = "123454"
-# userPredet : User = User()
+# Inicializar la cuenta de usuario inicial
+FIRST_SUPERUSER : str = "r.bonachea@email.com"
+FIRST_SUPERUSER_PASSWORD : str = "123454"
+userPredet : User = User()
 
 def initBDdatos():
     # En este contexto, es necesario next to get a session out of the generator según
