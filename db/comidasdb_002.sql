@@ -1,5 +1,5 @@
 
---Datos de prueba del sistema
+-- Datos de prueba del sistema
 
 -- usuarios de restaurants
 INSERT INTO `users` (`id`, `email`, `password`, `remember_token`, `created_at`, `updated_at`, `isEncrypted`) VALUES
@@ -36,20 +36,20 @@ INSERT INTO `clientes` (`id`, `nombre`,`apellidos`,`email`,`telefono`,`telefono2
   -- pedidos
 INSERT INTO `pedidos`(`id`,`id_cliente`,`fecha`,`ubicacion_lat`,`ubicacion_long`, `status`,`iva`,`forma_pago`,`total`, `envios`) VALUES 
   (1,1,'2022-09-11 23:30:56','17.171047038617488', '92.33461453753801','PEDIDO',0.12,'EFECTIVO',300.0,25.0),
-  (1,2,'2022-09-11 23:30:56','17.171047038617488', '92.33461453753801','PEDIDO',0.12,'EFECTIVO',300.0,25.0),
-  (1,3,'2022-09-11 23:30:56','17.171047038617488', '92.33461453753801','PEDIDO',0.12,'EFECTIVO',300.0,25.0),
+  (2,2,'2022-09-11 23:30:56','17.171047038617488', '92.33461453753801','PEDIDO',0.12,'EFECTIVO',300.0,25.0),
+  (3,3,'2022-09-11 23:30:56','17.171047038617488', '92.33461453753801','PEDIDO',0.12,'EFECTIVO',300.0,25.0);
 
---repartidores
-INSERT INTO `repartidor`(`id`,`id_restaurant`,`razon_social`,`nombre`,`clabe`,`telefono`,`email`,`horario`) VALUES
+-- repartidores
+INSERT INTO `repartidores`(`id`,`id_restaurant`,`razon_social`,`nombre`,`clabe`,`telefono`,`email`,`horario`) VALUES
   (1,1,'Fast and Furious','pedro','123456789123456789','9191002212','fastandfurious@gmail.com','todo el dia'),
   (2,2,'Repartiplus','Juan','123456789123456789','9191002212','repartiplus@gmail.com','todo el dia');
 
---envios
+-- envios
 INSERT INTO `envios`(`id`,`id_pedido`,`id_repartidor`,`id_restaurant`,`status`,`observaciones`,`total`,`envio`) VALUES
   (1,1,1,1,'PREPARACION','EL PEDIDO SALDRA PRONTO',300,25.0);
 
 
---platillos
+-- platillos
 
 INSERT INTO `platillos`(`id`,`id_restaurant`,`nombre`,`descripcion`,`precio`,`imagen`,`categoria`,`status`) VALUES
   (1,1,'mole','poblano',45,'','comida','DISPONIBLE'),  
@@ -59,8 +59,11 @@ INSERT INTO `platillos`(`id`,`id_restaurant`,`nombre`,`descripcion`,`precio`,`im
   (5,1,'limonada','jarra',20,'','bebida','DISPONIBLE');
 
 
---platilos en un pedido
+-- platilos en un pedido
 INSERT INTO `pedido_platillos`(`id_pedido`,`id_platillo`,`id_envio`,`cantidad`,`precio`) VALUES
   (1,1,1,2,45),
   (1,2,1,3,18),
   (1,5,1,1,120);
+
+
+insert into controlversionbd (archivo_tecnico, fechaejecucion) values ('comidasdb_002.sql', '2022-11-04 10:29:30')

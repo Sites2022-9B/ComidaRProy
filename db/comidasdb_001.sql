@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS `pedidos`(
   forma_pago ENUM('EFECTIVO','ELECTRONICO') NOT NULL DEFAULT 'EFECTIVO',
   total DECIMAL(10,2) NOT NULL,
   envios DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (`id`),
   KEY `id_cliente` (`id_cliente`),
   CONSTRAINT `pedidos_ibfk_1` FOREIGN KEY (`id_cliente`) REFERENCES `clientes` (`id`) 
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;

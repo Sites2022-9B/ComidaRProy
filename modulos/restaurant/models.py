@@ -1,8 +1,6 @@
 from ..shared_models import *
 from sqlalchemy.sql.sqltypes import DECIMAL, Date
 
-
-
 class Restaurant(Base):
     __tablename__ = 'restaurant'
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
